@@ -347,14 +347,39 @@ module.exports = function buildMapping(data, opts = {}) {
   }
 
   // ========= Mapeo EXACTO de tokens del DOCX =========
+  const vendedorNombre = (
+    data.vendedor_nombre ||
+    data.vendedorNombre ||
+    data['vendedor_nombre'] ||
+    data.beneficiario ||
+    ''
+  );
+  const vendedorDomicilio = (
+    data.vendedor_domicilio ||
+    data.vendedorDomicilio ||
+    data['vendedor_domicilio'] ||
+    ''
+  );
+
+  if (!vendedorNombre) {
+    throw new Error('CONTRATO_INCOMPLETO: vendedor_nombre vacío');
+  }
+  if (!vendedorDomicilio) {
+    throw new Error('CONTRATO_INCOMPLETO: vendedor_domicilio vacío');
+  }
+
   const mapping = {
     // Encabezado / partes
     'nombre deudor': (data.deudor || data['nombre deudor'] || '').toUpperCase(),
     'genero': generoEtiqueta,
+    'VENDEDOR_NOMBRE': vendedorNombre.toUpperCase(),
+    'nombre_vendedor': vendedorNombre.toUpperCase(),
 
     // Domicilios
     'direccion deudor': (data.direccion || data['direccion deudor'] || data.deudorDireccion || '').toUpperCase(),
     'poblacion deudor': (data.poblacion || data['poblacion deudor'] || data.deudorPoblacion || '').toUpperCase(),
+    'VENDEDOR_DOMICILIO': vendedorDomicilio.toUpperCase(),
+    'domicilio_vendedor': vendedorDomicilio.toUpperCase(),
 
     // Predio
     'nombre predio': (

@@ -124,6 +124,22 @@ const STEPS = [
     field: 'beneficiario',
   },
 
+  // B1.1 Nombre del vendedor
+  {
+    id: 'vendedorNombre',
+    block: 'B',
+    q: '🧑‍💼 Nombre completo del **vendedor**:',
+    field: 'vendedor_nombre',
+  },
+
+  // B1.2 Domicilio del vendedor
+  {
+    id: 'vendedorDomicilio',
+    block: 'B',
+    q: '🏠 Domicilio del **vendedor**:',
+    field: 'vendedor_domicilio',
+  },
+
   // B2. Nombre del deudor
   {
     id: 'deudorNombre',
