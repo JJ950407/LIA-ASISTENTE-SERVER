@@ -25,26 +25,9 @@ const summaryVenta = document.getElementById('summary-venta');
 const summaryCliente = document.getElementById('summary-cliente');
 const summaryPredio = document.getElementById('summary-predio');
 const editPredioButton = document.querySelector('[data-edit="predio"]');
-const loadingOverlay = document.getElementById('loading-overlay');
-const loadingText = document.getElementById('loading-text');
 
 let stepOrder = ['docs', 'venta', 'cliente', 'predio', 'resumen'];
 let currentIndex = 0;
-
-function showLoading(message) {
-  if (loadingText && message) {
-    loadingText.textContent = message;
-  }
-  if (loadingOverlay) {
-    loadingOverlay.classList.remove('hidden');
-  }
-}
-
-function hideLoading() {
-  if (loadingOverlay) {
-    loadingOverlay.classList.add('hidden');
-  }
-}
 
 function formatCurrency(value) {
   const number = Number(value || 0);
@@ -346,7 +329,23 @@ submitButton.addEventListener('click', async () => {
     }
 
     statusText.textContent = 'Generando documentos...';
-    showLoading('Generando documentos…');
+    if (window.LIA_LOADER) {
+      window.LIA_LOADER.showLoader();
+      window.LIA_LOADER.setStep('Generando documentos…');
+      window.LIA_LOADER.setPct(10);
+    }
+
+    let softPct = 10;
+    let softTimer = null;
+    if (window.LIA_LOADER) {
+      softTimer = setInterval(() => {
+        if (softPct < 95) {
+          softPct += 3;
+          window.LIA_LOADER.setPct(softPct);
+        }
+      }, 350);
+    }
+
     try {
       const generateRes = await fetch('/api/generar', {
         method: 'POST',
@@ -370,10 +369,21 @@ submitButton.addEventListener('click', async () => {
       if (pagaresPdfUrl) downloadPagares.href = pagaresPdfUrl;
 
       resultsSection.classList.remove('hidden');
+
+      if (window.LIA_LOADER) {
+        window.LIA_LOADER.setStep('Finalizando…');
+        window.LIA_LOADER.setPct(100);
+      }
     } finally {
-      hideLoading();
+      if (softTimer) clearInterval(softTimer);
+      if (window.LIA_LOADER) {
+        setTimeout(() => window.LIA_LOADER.hideLoader(), 200);
+      }
     }
   } catch (error) {
+    if (window.LIA_LOADER) {
+      window.LIA_LOADER.hideLoader();
+    }
     statusText.textContent = error.message;
   } finally {
     submitButton.disabled = false;
@@ -394,3 +404,37 @@ updateAnualidadesVisibility();
 updateLugarPagoVisibility();
 showStep(0);
 renderSummary(buildPayload());
+
+(function () {
+  const overlay = document.getElementById("liaLoaderOverlay");
+  const titleEl = document.getElementById("liaLoaderTitle");
+  const stepEl  = document.getElementById("liaLoaderStep");
+  const pctEl   = document.getElementById("liaLoaderPct");
+  const barEl   = document.getElementById("liaProgressBar");
+
+  function setPct(p){
+    const pct = Math.max(0, Math.min(100, Math.round(p)));
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (barEl) barEl.style.width = `${pct}%`;
+  }
+  function setStep(t){
+    if (stepEl) stepEl.textContent = t || "Procesando…";
+  }
+  function showLoader(){
+    if (!overlay) return;
+    if (titleEl) titleEl.textContent = "Generando documentos…";
+    setStep("Iniciando…");
+    setPct(0);
+    overlay.setAttribute("aria-hidden", "false");
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+  }
+  function hideLoader(){
+    if (!overlay) return;
+    overlay.setAttribute("aria-hidden", "true");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+  }
+
+  window.LIA_LOADER = { showLoader, hideLoader, setPct, setStep };
+})();

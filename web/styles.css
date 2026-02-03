@@ -288,7 +288,7 @@ button,
   flex-wrap: wrap;
 }
 
-.loading-overlay {
+#liaLoaderOverlay {
   position: fixed;
   inset: 0;
   background: rgba(10, 20, 15, 0.35);
@@ -298,47 +298,63 @@ button,
   justify-content: center;
   padding: 24px;
   z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
-.loading-card {
-  background: rgba(255, 255, 255, 0.9);
+#liaLoaderOverlay[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.loader-card {
+  background: rgba(255, 255, 255, 0.92);
   border-radius: 18px;
   padding: 28px 32px;
-  min-width: min(360px, 90vw);
-  text-align: center;
+  min-width: min(380px, 92vw);
   box-shadow: var(--shadow-card);
   border: 1px solid rgba(210, 224, 216, 0.9);
 }
 
-.loading-spinner {
-  width: 44px;
-  height: 44px;
+.loader-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.loader-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loader-title strong {
+  font-size: 1.05rem;
+}
+
+.loader-title span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 3px solid rgba(30, 124, 83, 0.2);
   border-top-color: var(--accent);
-  margin: 0 auto 16px;
   animation: spin 0.9s linear infinite;
 }
 
-.loading-text {
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.loading-bar {
-  position: relative;
-  width: 100%;
-  height: 6px;
-  background: rgba(30, 124, 83, 0.12);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.loading-bar span {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(30, 124, 83, 0.7), transparent);
-  animation: shimmer 1.4s ease-in-out infinite;
+.loader-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 @keyframes spin {
@@ -347,17 +363,8 @@ button,
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  50% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
+.progress { position: relative; height: 10px; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); }
+.progress-bar{ height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, rgba(36,194,106,.95), rgba(19,167,84,.95)); transition: width .25s ease; }
 
 @media (max-width: 720px) {
   .topbar {
@@ -386,5 +393,9 @@ button,
   .option {
     width: 100%;
     justify-content: center;
+  }
+
+  .loader-card {
+    padding: 22px 20px;
   }
 }

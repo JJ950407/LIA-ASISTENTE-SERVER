@@ -314,12 +314,23 @@
     </main>
   </div>
 
-  <div class="loading-overlay hidden" id="loading-overlay" aria-live="polite" aria-busy="true">
-    <div class="loading-card" role="status">
-      <div class="loading-spinner"></div>
-      <div class="loading-text" id="loading-text">Generando documentos…</div>
-      <div class="loading-bar">
-        <span></span>
+  <div id="liaLoaderOverlay" aria-hidden="true">
+    <div class="loader-card" role="dialog" aria-modal="true" aria-label="Generando documentos">
+      <div class="loader-top">
+        <div class="loader-title">
+          <strong id="liaLoaderTitle">Generando documentos…</strong>
+          <span id="liaLoaderStep">Preparando…</span>
+        </div>
+        <div class="spinner" aria-hidden="true"></div>
+      </div>
+
+      <div class="progress">
+        <div class="progress-bar" id="liaProgressBar"></div>
+      </div>
+
+      <div class="loader-foot">
+        <span id="liaLoaderPct">0%</span>
+        <span>No cierres esta ventana</span>
       </div>
     </div>
   </div>
