@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LIA Pagaré</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/adein-logo.png" alt="ADEIN" class="brand__logo" />
+        <div class="brand__text">
+          <h1>LIA Pagaré Web</h1>
+          <p>Gestión inmobiliaria • Documentos seguros</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="progress">
+        <div class="progress__label" id="progress-label">Paso 1 de 5</div>
+        <div class="progress__bar">
+          <span id="progress-bar"></span>
+        </div>
+      </section>
+
+      <div class="wizard-card">
+        <form id="wizard" novalidate>
+          <section class="step" id="step-docs" data-step="docs">
+            <div class="card">
+              <h2>1. Documentos a generar</h2>
+              <p>Selecciona el tipo de documentos.</p>
+              <div class="options">
+                <label class="option">
+                  <input type="radio" name="tipoDocumento" value="contrato" data-required="true" />
+                  <span>Contrato</span>
+                </label>
+                <label class="option">
+                  <input type="radio" name="tipoDocumento" value="pagares" data-required="true" />
+                  <span>Pagarés</span>
+                </label>
+                <label class="option">
+                  <input type="radio" name="tipoDocumento" value="ambos" data-required="true" />
+                  <span>Ambos</span>
+                </label>
+                <span class="error"></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="step" id="step-venta" data-step="venta">
+            <div class="card">
+              <h2>2. Venta y pagos</h2>
+              <div class="grid">
+                <label class="field">
+                  <span>Fecha de emisión del lote</span>
+                  <input type="text" id="fechaEmision" placeholder="hoy o 24/12/2025" data-required="true" data-type="date" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Monto total de la venta</span>
+                  <input type="text" id="total" placeholder="$250,000" data-required="true" data-type="money" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Enganche</span>
+                  <input type="text" id="enganche" placeholder="$50,000" data-required="true" data-type="money" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Mensualidad</span>
+                  <input type="text" id="mensual" placeholder="$12,500" data-required="true" data-type="money" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="field">
+                <span>¿Habrá anualidades especiales?</span>
+                <div class="options">
+                  <label class="option">
+                    <input type="radio" name="anualidades" value="si" data-required="true" />
+                    <span>Sí</span>
+                  </label>
+                  <label class="option">
+                    <input type="radio" name="anualidades" value="no" data-required="true" />
+                    <span>No</span>
+                  </label>
+                  <span class="error"></span>
+                </div>
+              </div>
+
+              <div class="grid" id="anualidades-fields">
+                <label class="field">
+                  <span>Monto de anualidad</span>
+                  <input type="text" id="anualidadMonto" placeholder="$15,000" data-type="money" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Cantidad de anualidades</span>
+                  <input type="number" id="numeroAnualidades" min="0" placeholder="3" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Mes de vencimiento</span>
+                  <input type="text" id="anualidadMes" placeholder="febrero o 2" data-required="true" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <div class="grid">
+                <label class="field">
+                  <span>Regla 15/30</span>
+                  <div class="options">
+                    <label class="option">
+                      <input type="radio" name="regla1530" value="este" data-required="true" />
+                      <span>Este mes</span>
+                    </label>
+                    <label class="option">
+                      <input type="radio" name="regla1530" value="siguiente" data-required="true" />
+                      <span>Siguiente mes</span>
+                    </label>
+                  </div>
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Interés moratorio anual (%)</span>
+                  <input type="number" id="moratorios" min="0" max="100" step="0.01" placeholder="2" data-required="true" data-type="percent" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Interés anual cláusula cuarta (%)</span>
+                  <input type="number" id="interes" min="0" max="100" step="0.01" placeholder="1.5" data-required="true" data-type="percent" />
+                  <span class="error"></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="step" id="step-cliente" data-step="cliente">
+            <div class="card">
+              <h2>3. Cliente y deudor</h2>
+              <div class="grid">
+                <label class="field">
+                  <span>Beneficiario (a la orden de)</span>
+                  <input type="text" id="beneficiario" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Nombre del vendedor</span>
+                  <input type="text" id="vendedorNombre" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Domicilio del vendedor</span>
+                  <input type="text" id="vendedorDomicilio" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Nombre completo del deudor</span>
+                  <input type="text" id="deudor" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Género</span>
+                  <select id="deudorGenero" data-required="true">
+                    <option value="">Selecciona...</option>
+                    <option value="Hombre">Hombre</option>
+                    <option value="Mujer">Mujer</option>
+                  </select>
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Dirección completa del deudor</span>
+                  <input type="text" id="direccion" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Población (ciudad, estado, C.P.)</span>
+                  <input type="text" id="poblacion" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Lugar de expedición</span>
+                  <input type="text" id="lugarExpedicion" data-required="true" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <label class="toggle">
+                <input type="checkbox" id="lugarPagoIgual" checked />
+                <span>El lugar de pago es igual al de expedición</span>
+              </label>
+
+              <div class="grid" id="lugarPagoContainer">
+                <label class="field">
+                  <span>Lugar de pago (otro)</span>
+                  <input type="text" id="lugarPago" data-required="true" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <div class="grid">
+                <label class="field">
+                  <span>Teléfono del cliente</span>
+                  <input type="text" id="telefono" placeholder="+52 55 1234 5678" data-required="true" data-type="phone" />
+                  <span class="error"></span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section class="step" id="step-predio" data-step="predio">
+            <div class="card">
+              <h2>4. Predio y testigos</h2>
+              <div class="grid">
+                <label class="field">
+                  <span>Nombre del predio</span>
+                  <input type="text" id="predioNombre" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Ubicación completa</span>
+                  <input type="text" id="predioUbicacion" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Municipio</span>
+                  <input type="text" id="predioMunicipio" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Manzana/Lote</span>
+                  <input type="text" id="predioManzanaLote" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Superficie m²</span>
+                  <input type="text" id="predioSuperficie" data-required="true" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="grid">
+                <label class="field">
+                  <span>Lindero Norte (metros | colinda)</span>
+                  <input type="text" id="linderoNorte" placeholder="10 | con camino" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Lindero Sur (metros | colinda)</span>
+                  <input type="text" id="linderoSur" placeholder="10 | con lote 23" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Lindero Oriente (metros | colinda)</span>
+                  <input type="text" id="linderoOriente" placeholder="32 | con terreno ejidal" data-required="true" />
+                  <span class="error"></span>
+                </label>
+                <label class="field">
+                  <span>Lindero Poniente (metros | colinda)</span>
+                  <input type="text" id="linderoPoniente" placeholder="32 | con barranca" data-required="true" />
+                  <span class="error"></span>
+                </label>
+              </div>
+
+              <label class="field">
+                <span>Testigos (Testigo 1 | Testigo 2)</span>
+                <input type="text" id="testigos" placeholder="Nombre 1 | Nombre 2" data-required="true" />
+                <span class="error"></span>
+              </label>
+            </div>
+          </section>
+
+          <section class="step" id="step-resumen" data-step="resumen">
+            <div class="card">
+              <h2>5. Resumen final</h2>
+              <div class="summary" id="summary-venta"></div>
+              <button type="button" class="link" data-edit="venta">Editar venta y pagos</button>
+
+              <div class="summary" id="summary-cliente"></div>
+              <button type="button" class="link" data-edit="cliente">Editar cliente y deudor</button>
+
+              <div class="summary" id="summary-predio"></div>
+              <button type="button" class="link" data-edit="predio">Editar predio y testigos</button>
+
+              <button type="button" class="primary" id="submit">Aprobar y generar documentos</button>
+              <p class="status" id="status"></p>
+            </div>
+          </section>
+
+          <div class="nav">
+            <button type="button" class="ghost" id="prev">Atrás</button>
+            <button type="button" class="primary" id="next">Continuar</button>
+          </div>
+        </form>
+      </div>
+
+      <section class="results hidden" id="results">
+        <div class="card">
+          <h2>Documentos generados</h2>
+          <div class="result-actions">
+            <a class="primary" id="download-contrato" href="#" target="_blank" rel="noreferrer">Descargar contrato PDF</a>
+            <a class="primary" id="download-pagares" href="#" target="_blank" rel="noreferrer">Descargar pagarés PDF</a>
+            <button class="ghost" id="print-pagares" type="button">Imprimir pagarés</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="loading-overlay hidden" id="loading-overlay" aria-live="polite" aria-busy="true">
+    <div class="loading-card" role="status">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loading-text">Generando documentos…</div>
+      <div class="loading-bar">
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
