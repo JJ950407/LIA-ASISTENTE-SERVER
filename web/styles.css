@@ -512,6 +512,7 @@ button,
   .dashboard {
     flex-direction: column;
   }
+}
 
   .sidebar {
     width: 100%;
@@ -531,13 +532,6 @@ button,
 
   .sidebar__footer {
     margin-top: 0;
-  }
-}
-
-@media (max-width: 720px) {
-  .main-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 

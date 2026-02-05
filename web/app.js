@@ -393,7 +393,10 @@ submitButton.addEventListener('click', async () => {
     } finally {
       if (softTimer) clearInterval(softTimer);
       if (window.LIA_LOADER) {
-        setTimeout(() => window.LIA_LOADER.hideLoader(), 200);
+        setTimeout(() => {
+          window.LIA_LOADER.hideLoader();
+          finalizarProceso();
+        }, 500);
       }
     }
   } catch (error) {
