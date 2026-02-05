@@ -1,0 +1,93 @@
+:root {
+  color-scheme: light;
+  --green: #1f8b57;
+  --green-dark: #125a3b;
+  --green-soft: #e5f2eb;
+  --text: #0f1a13;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--green-soft);
+  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  padding: 24px;
+}
+
+.login__card {
+  width: min(380px, 100%);
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 26px;
+  box-shadow: 0 20px 40px rgba(14, 60, 38, 0.15);
+  text-align: center;
+  border: 1px solid rgba(18, 90, 59, 0.12);
+}
+
+.login__logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin-bottom: 12px;
+}
+
+.login__hint {
+  margin-top: 6px;
+  margin-bottom: 18px;
+  color: #4e5f56;
+  font-size: 0.95rem;
+}
+
+.login__form {
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.login__field span {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #3d4f46;
+}
+
+.login__field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(18, 90, 59, 0.2);
+  font-size: 1rem;
+}
+
+.login__button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--green), var(--green-dark));
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.login__error {
+  color: #b42318;
+  min-height: 1.2em;
+  font-size: 0.9rem;
+}
+
+/* Aumentar todas las imágenes al triple manteniendo estética */
+img {
+  transform: scale(3);
+  transform-origin: center;
+  margin: 2em;
+}
