@@ -84,3 +84,10 @@ body.login {
   min-height: 1.2em;
   font-size: 0.9rem;
 }
+
+/* Aumentar todas las imágenes al triple manteniendo estética */
+img {
+  transform: scale(3);
+  transform-origin: center;
+  margin: 2em;
+}

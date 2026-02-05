@@ -575,3 +575,10 @@ button,
     grid-column: 1 / -1;
   }
 }
+
+/* Aumentar todas las imágenes al triple manteniendo estética */
+img {
+  transform: scale(3);
+  transform-origin: center;
+  margin: 2em;
+}
