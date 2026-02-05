@@ -123,25 +123,6 @@ app.get('/logout', (req, res) => {
   return res.redirect('/login');
 });
 
-app.get('/login', (req, res) => {
-  setNoCache(res);
-  res.sendFile(path.join(__dirname, 'web', 'login.html'));
-});
-
-app.post('/login', (req, res) => {
-  const { usuario, contrasena } = req.body || {};
-  if (usuario === LOGIN_USER && contrasena === LOGIN_PASS) {
-    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${SESSION_VALUE}; HttpOnly; Path=/; SameSite=Lax`);
-    return res.redirect(303, '/');
-  }
-  return res.redirect('/login?error=1');
-});
-
-app.get('/logout', (req, res) => {
-  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
-  return res.redirect('/login');
-});
-
 function slugifyWeb(text) {
   return String(text || '')
     .normalize('NFD')
