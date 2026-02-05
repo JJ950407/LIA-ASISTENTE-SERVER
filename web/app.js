@@ -384,6 +384,7 @@ submitButton.addEventListener('click', async () => {
       if (pagaresPdfUrl) downloadPagares.href = pagaresPdfUrl;
 
       resultsSection.classList.remove('hidden');
+      finalizarProceso();
 
       if (window.LIA_LOADER) {
         window.LIA_LOADER.setStep('Finalizando…');
