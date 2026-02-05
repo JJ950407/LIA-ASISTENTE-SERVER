@@ -224,11 +224,11 @@ app.post('/api/generar', async (req, res) => {
 
     const responseOutputs = {};
     if (outputs.contratoPdfPath) {
-      const rel = path.relative(__dirname, outputs.contratoPdfPath).replace(/\\/g, '/');
+      const rel = path.relative(BASE_CLIENTS_DIR, outputs.contratoPdfPath).replace(/\\/g, '/');
       responseOutputs.contratoPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
     }
     if (outputs.pagaresPdfPath) {
-      const rel = path.relative(__dirname, outputs.pagaresPdfPath).replace(/\\/g, '/');
+      const rel = path.relative(BASE_CLIENTS_DIR, outputs.pagaresPdfPath).replace(/\\/g, '/');
       responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
     }
 
@@ -243,14 +243,31 @@ app.get('/api/descargar', (req, res) => {
   if (!relPath || typeof relPath !== 'string') {
     return res.status(400).send('Falta path.');
   }
-  const absPath = path.resolve(__dirname, relPath);
-  if (!absPath.startsWith(BASE_CLIENTS_DIR)) {
+  if (relPath.includes('\0')) {
     return res.status(400).send('Ruta inválida.');
   }
-  if (!fs.existsSync(absPath)) {
+  if (path.isAbsolute(relPath)) {
+    return res.status(400).send('Ruta inválida.');
+  }
+  const candidate = path.resolve(BASE_CLIENTS_DIR, relPath);
+  const rel = path.relative(BASE_CLIENTS_DIR, candidate);
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    return res.status(400).send('Ruta inválida.');
+  }
+  const exists = fs.existsSync(candidate);
+  if (process.env.DEBUG_DOWNLOADS === '1') {
+    console.log('[DEBUG_DOWNLOADS]', {
+      BASE_CLIENTS_DIR,
+      relPath,
+      candidate,
+      rel,
+      exists
+    });
+  }
+  if (!exists) {
     return res.status(404).send('Archivo no encontrado.');
   }
-  return res.download(absPath);
+  return res.download(candidate);
 });
 
 app.listen(PORT, () => {
