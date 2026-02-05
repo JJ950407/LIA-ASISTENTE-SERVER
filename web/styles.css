@@ -539,6 +539,14 @@ button,
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+@media (max-width: 720px) {
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
 
   .main-header__right {
     width: 100%;
