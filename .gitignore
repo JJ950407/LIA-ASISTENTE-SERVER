@@ -1,28 +1,6 @@
 # dependencias
 node_modules/
 
-# entorno
-.env
-
-# plantillas y documentos binarios
-templates/base.pdf
-templates/**/*.pdf
-templates/**/*.docx
-
-# documentos generados
-data/**/*.pdf
-data/**/*.docx
-
-# assets binarios de interfaz
-public/**/*.png
-public/**/*.jpg
-public/**/*.jpeg
-
-# temporales
-.tmp/
-# dependencias
-node_modules/
-
 # datos y runtime
 data/
 
