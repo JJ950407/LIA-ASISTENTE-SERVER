@@ -29,6 +29,21 @@ const editPredioButton = document.querySelector('[data-edit="predio"]');
 let stepOrder = ['docs', 'venta', 'cliente', 'predio', 'resumen'];
 let currentIndex = 0;
 
+function finalizarProceso() {
+  const container = resultsSection?.querySelector('.card') || resultsSection;
+  if (!container) return;
+  if (container.querySelector('.nuevo-documento')) return;
+  const nuevoDocBtn = document.createElement('button');
+  nuevoDocBtn.textContent = '✚ Crear Nuevo Documento';
+  nuevoDocBtn.className = 'primary nuevo-documento';
+  nuevoDocBtn.style.marginTop = '20px';
+  nuevoDocBtn.type = 'button';
+  nuevoDocBtn.onclick = function () {
+    location.reload();
+  };
+  container.appendChild(nuevoDocBtn);
+}
+
 function formatCurrency(value) {
   const number = Number(value || 0);
   return number.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -377,7 +392,10 @@ submitButton.addEventListener('click', async () => {
     } finally {
       if (softTimer) clearInterval(softTimer);
       if (window.LIA_LOADER) {
-        setTimeout(() => window.LIA_LOADER.hideLoader(), 200);
+        setTimeout(() => {
+          window.LIA_LOADER.hideLoader();
+          finalizarProceso();
+        }, 500);
       }
     }
   } catch (error) {
