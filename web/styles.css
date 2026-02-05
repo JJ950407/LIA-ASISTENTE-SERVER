@@ -395,6 +395,18 @@ button,
   font-size: 0.95rem;
   white-space: pre-line;
   border: 1px solid rgba(206, 220, 212, 0.8);
+  line-height: 1.65;
+  padding-left: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ctext x='0' y='16' font-size='16'%3E%F0%9F%94%B9%3C/text%3E%3C/svg%3E");
+  background-repeat: repeat-y;
+  background-size: 20px 26px;
+  background-position: 12px 1.9em;
+}
+
+.summary::first-line {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent-dark);
 }
 
 .error {
@@ -551,5 +563,15 @@ button,
 
   .loader-card {
     padding: 22px 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .field--full {
+    grid-column: 1 / -1;
   }
 }
