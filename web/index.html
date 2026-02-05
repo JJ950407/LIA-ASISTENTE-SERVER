@@ -7,24 +7,47 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <img src="assets/adein-logo.png" alt="ADEIN" class="brand__logo" />
-        <div class="brand__text">
-          <h1>LIA Pagaré Web</h1>
-          <p>Gestión inmobiliaria • Documentos seguros</p>
+  <div class="app dashboard">
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <img src="/assets/logo.png" alt="LIA" class="sidebar__logo" />
+        <div class="sidebar__brand-text">
+          <span class="sidebar__name">ADEIN</span>
+          <span class="sidebar__sub">LIA Pagaré Web</span>
         </div>
       </div>
-    </header>
+      <div class="sidebar__section">
+        <p class="sidebar__section-title">Pasos del wizard</p>
+        <ol class="sidebar__steps">
+          <li>Documentos</li>
+          <li>Venta y pagos</li>
+          <li>Cliente y deudor</li>
+          <li>Predio y testigos</li>
+          <li>Resumen final</li>
+        </ol>
+      </div>
+      <div class="sidebar__footer">
+        <img src="/assets/adein.png" alt="ADEIN" class="sidebar__adein" />
+      </div>
+    </aside>
 
-    <main>
-      <section class="progress">
-        <div class="progress__label" id="progress-label">Paso 1 de 5</div>
-        <div class="progress__bar">
-          <span id="progress-bar"></span>
+    <main class="main">
+      <header class="main-header">
+        <div class="main-header__left">
+          <span class="main-header__eyebrow">Asistente</span>
+          <h1 class="main-header__title" id="progress-label">Paso 1 de 5</h1>
+          <div class="wizard-progress">
+            <div class="wizard-progress__bar">
+              <span id="progress-bar"></span>
+            </div>
+          </div>
         </div>
-      </section>
+        <div class="main-header__right">
+          <img src="/assets/casitas.png" alt="" class="main-header__decor" aria-hidden="true" />
+          <img src="/assets/adein.png" alt="ADEIN" class="main-header__logo" />
+          <button type="button" class="main-header__action">Iniciar sesión</button>
+        </div>
+      </header>
 
       <div class="wizard-card">
         <form id="wizard" novalidate>
