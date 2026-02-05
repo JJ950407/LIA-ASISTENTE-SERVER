@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión</title>
+  <link rel="stylesheet" href="/login.css" />
+</head>
+<body class="login">
+  <main class="login__card">
+    <img src="/assets/logo.png" alt="LIA" class="login__logo" />
+    <h1>Iniciar sesión</h1>
+    <p class="login__hint">Accede para continuar al asistente.</p>
+    <form method="post" action="/login" class="login__form">
+      <label class="login__field">
+        <span>Usuario</span>
+        <input type="text" name="usuario" autocomplete="username" required />
+      </label>
+      <label class="login__field">
+        <span>Contraseña</span>
+        <input type="password" name="contrasena" autocomplete="current-password" required />
+      </label>
+      <p class="login__error" id="login-error" aria-live="polite"></p>
+      <button type="submit" class="login__button">Iniciar sesión</button>
+    </form>
+  </main>
+  <script src="/login.js"></script>
+</body>
+</html>
