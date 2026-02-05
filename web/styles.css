@@ -1,12 +1,13 @@
 :root {
   color-scheme: light;
-  --bg: #f3f7f4;
-  --card: rgba(255, 255, 255, 0.78);
+  --bg: #f1f7f3;
+  --card: rgba(255, 255, 255, 0.92);
   --text: #0f1a13;
   --muted: #5b6b62;
-  --accent: #1e7c53;
-  --accent-strong: #0f5a3a;
-  --accent-soft: #e2f0e8;
+  --accent: #1f8b57;
+  --accent-strong: #125a3b;
+  --accent-soft: #e5f2eb;
+  --accent-dark: #0c3f29;
   --border: #dfe9e2;
   --radius-lg: 22px;
   --radius-md: 16px;
@@ -31,63 +32,137 @@ body {
   min-height: 100vh;
 }
 
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(207, 220, 213, 0.6);
-  padding: 18px clamp(16px, 4vw, 48px);
+.dashboard {
+  display: flex;
+  min-height: 100vh;
 }
 
-.brand {
+.sidebar {
+  width: 260px;
+  background: rgba(255, 255, 255, 0.95);
+  border-right: 1px solid rgba(207, 220, 213, 0.6);
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-.brand__logo {
-  width: auto;
-  height: 40px;
+.sidebar__logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 10px 24px rgba(12, 45, 30, 0.12);
+}
+
+.sidebar__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sidebar__sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sidebar__section-title {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.sidebar__steps {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  padding-left: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.sidebar__steps li {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(226, 240, 232, 0.8);
+}
+
+.sidebar__footer {
+  margin-top: auto;
+}
+
+.sidebar__adein {
+  width: 140px;
+  max-width: 100%;
+  height: auto;
   object-fit: contain;
 }
 
-.brand__text h1 {
-  font-size: 1.25rem;
+.main {
+  flex: 1;
+  padding: 28px clamp(16px, 4vw, 48px) 72px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  background: rgba(241, 248, 244, 0.95);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 26px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.main-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.main-header__eyebrow {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.main-header__title {
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-.brand__text p {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-main {
-  padding: 32px clamp(16px, 5vw, 56px) 72px;
-  max-width: 1040px;
-  margin: 0 auto;
-}
-
-.progress {
-  margin-bottom: 24px;
-}
-
-.progress__label {
-  color: var(--muted);
-  font-size: 0.95rem;
-  margin-bottom: 10px;
-}
-
-.progress__bar {
+.wizard-progress__bar {
   background: var(--accent-soft);
   border-radius: 999px;
   overflow: hidden;
   height: 8px;
+  width: min(320px, 80vw);
 }
 
-.progress__bar span {
+.wizard-progress__bar span {
   display: block;
   height: 100%;
   width: 0;
@@ -95,13 +170,68 @@ main {
   transition: width 0.3s ease;
 }
 
+.main-header__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.main-header__brand {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #fff;
+  border-radius: 999px;
+  border: 1px solid rgba(18, 90, 59, 0.12);
+  box-shadow: 0 10px 22px rgba(12, 45, 30, 0.1);
+}
+
+.main-header__logo {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+.main-header__action {
+  border: 1px solid rgba(18, 90, 59, 0.2);
+  background: #fff;
+  color: var(--accent-dark);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(12, 45, 30, 0.08);
+}
+
+.main-header__action:hover {
+  border-color: rgba(30, 124, 83, 0.4);
+}
+
 .wizard-card {
   background: var(--card);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
   padding: clamp(16px, 3vw, 32px);
   border: 1px solid rgba(223, 233, 226, 0.9);
   backdrop-filter: blur(14px);
+  max-width: 960px;
+  margin: 28px auto 0;
+}
+
+.main-footer {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  padding: 18px 8px 0;
+}
+
+.main-footer__decor {
+  width: 180px;
+  max-width: 60vw;
+  opacity: 0.2;
+  object-fit: contain;
 }
 
 .card {
@@ -216,13 +346,13 @@ button,
 }
 
 .primary {
-  background: linear-gradient(180deg, #24a065, var(--accent-strong));
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
   color: #fff;
   padding: 12px 22px;
   border-radius: 14px;
   text-decoration: none;
   text-align: center;
-  box-shadow: 0 14px 24px rgba(20, 80, 50, 0.2);
+  box-shadow: 0 14px 24px rgba(18, 90, 59, 0.25);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -366,17 +496,41 @@ button,
 .progress { position: relative; height: 10px; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); }
 .progress-bar{ height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, rgba(36,194,106,.95), rgba(19,167,84,.95)); transition: width .25s ease; }
 
+@media (max-width: 960px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  .sidebar__section {
+    flex: 1 1 100%;
+  }
+
+  .sidebar__steps {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .sidebar__footer {
+    margin-top: 0;
+  }
+}
+
 @media (max-width: 720px) {
-  .topbar {
-    padding: 16px 18px;
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .brand__logo {
-    height: 36px;
-  }
-
-  .brand__text h1 {
-    font-size: 1.1rem;
+  .main-header__right {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .wizard-card {
