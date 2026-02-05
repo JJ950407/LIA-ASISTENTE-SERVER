@@ -37,3 +37,4 @@ data/
 # entorno
 .env
 .DS_Store
+web/assets/
