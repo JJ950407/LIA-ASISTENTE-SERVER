@@ -14,8 +14,13 @@ const ENABLE_AUTH = String(process.env.ENABLE_AUTH || '0') === '1';
 const AUTH_USER = process.env.AUTH_USER;
 const AUTH_PASS = process.env.AUTH_PASS;
 const AUTH_REALM = process.env.AUTH_REALM || 'LIA Pagaré';
+const LOGIN_USER = 'Isra';
+const LOGIN_PASS = 'adein123';
+const SESSION_COOKIE = 'lia_session';
+const SESSION_VALUE = 'ok';
 
 app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', `Basic realm="${AUTH_REALM}"`);
@@ -45,7 +50,78 @@ if (ENABLE_AUTH) {
   }
   app.use(basicAuth);
 }
-app.use(express.static(path.join(__dirname, 'web')));
+
+function parseCookies(req) {
+  const header = req.headers.cookie || '';
+  return header.split(';').reduce((acc, part) => {
+    const [key, ...rest] = part.trim().split('=');
+    if (!key) return acc;
+    acc[key] = decodeURIComponent(rest.join('='));
+    return acc;
+  }, {});
+}
+
+function isPublicPath(req) {
+  const publicPrefixes = ['/assets', '/login', '/login.css', '/login.js'];
+  if (req.path === '/logout') return true;
+  return publicPrefixes.some((prefix) => req.path.startsWith(prefix));
+}
+
+function requireAuth(req, res, next) {
+  if (isPublicPath(req)) return next();
+  const cookies = parseCookies(req);
+  if (cookies[SESSION_COOKIE] === SESSION_VALUE) return next();
+  return res.redirect('/login');
+}
+
+app.use(requireAuth);
+
+function setNoCache(res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+}
+
+app.get('/', (req, res) => {
+  setNoCache(res);
+  res.setHeader('Vary', 'Cookie');
+  return res.sendFile(path.join(__dirname, 'web', 'index.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  setNoCache(res);
+  res.setHeader('Vary', 'Cookie');
+  return res.sendFile(path.join(__dirname, 'web', 'index.html'));
+});
+
+app.use(express.static(path.join(__dirname, 'web'), {
+  etag: false,
+  lastModified: false,
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
+
+app.get('/login', (req, res) => {
+  setNoCache(res);
+  res.sendFile(path.join(__dirname, 'web', 'login.html'));
+});
+
+app.post('/login', (req, res) => {
+  const { usuario, contrasena } = req.body || {};
+  if (usuario === LOGIN_USER && contrasena === LOGIN_PASS) {
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE}=${SESSION_VALUE}; HttpOnly; Path=/; SameSite=Lax`);
+    return res.redirect(303, '/');
+  }
+  return res.redirect('/login?error=1');
+});
+
+app.get('/logout', (req, res) => {
+  res.setHeader('Set-Cookie', `${SESSION_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+  return res.redirect('/login');
+});
 
 function slugifyWeb(text) {
   return String(text || '')
