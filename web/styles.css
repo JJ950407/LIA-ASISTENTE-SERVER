@@ -539,6 +539,7 @@ button,
     flex-direction: column;
     align-items: flex-start;
   }
+}
 
   .main-header__right {
     width: 100%;
@@ -576,8 +577,50 @@ button,
   }
 }
 
-/* Aumentar todas las imágenes al triple manteniendo estética */
-img {
+/* Logo principal arriba a la izquierda (DEIN A Pagaré) */
+.logo-principal,
+header img:first-child,
+.sidebar img:first-child {
+  width: 120px !important;
+  height: auto !important;
+  transform: scale(1) !important;
+  object-fit: cover;
+  background: white;
+  padding: 5px;
+  z-index: 10;
+}
+
+/* Logo ADEIN arriba a la derecha (al lado de Cerrar sesión) */
+.logo-header-derecha,
+header img:last-child,
+.user-section img {
+  width: 80px !important;
+  height: auto !important;
+  opacity: 0.3 !important;
+  filter: blur(2px) !important;
+  border-radius: 0 !important;
+  transform: scale(1) !important;
+}
+
+/* Logo ADEIN abajo (footer) */
+footer img,
+.logo-footer {
+  width: 100px !important;
+  height: auto !important;
+  transform: scale(1) !important;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Casas del footer - mantener difuminadas */
+.casas-footer,
+footer .decoracion {
+  opacity: 0.2;
+  filter: blur(1px);
+}
+
+/* Las imágenes en login mantener tamaño triple */
+body.login-page img {
   transform: scale(3);
   transform-origin: center;
   margin: 2em;
