@@ -541,6 +541,13 @@ button,
   }
 }
 
+@media (max-width: 720px) {
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
   .main-header__right {
     width: 100%;
     justify-content: space-between;
@@ -577,7 +584,7 @@ button,
   }
 }
 
-/* Logo principal arriba a la izquierda (DEIN A Pagaré) */
+/* Logo principal arriba a la izquierda (DEIN A Pagaré) - YA ESTÁ BIEN */
 .logo-principal,
 header img:first-child,
 .sidebar img:first-child {
@@ -590,33 +597,40 @@ header img:first-child,
   z-index: 10;
 }
 
-/* Logo ADEIN arriba a la derecha (al lado de Cerrar sesión) */
+/* Logo ADEIN arriba a la derecha (al lado de "Paso 1 de 5") */
 .logo-header-derecha,
-header img:last-child,
-.user-section img {
-  width: 80px !important;
+header .logo-adein,
+.header-right img {
+  width: 150px !important;
   height: auto !important;
-  opacity: 0.3 !important;
-  filter: blur(2px) !important;
+  opacity: 1 !important;
+  filter: none !important;
   border-radius: 0 !important;
+  background: transparent !important;
   transform: scale(1) !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-/* Logo ADEIN abajo (footer) */
+/* Logo ADEIN abajo (footer) - MÁS GRANDE */
 footer img,
 .logo-footer {
-  width: 100px !important;
+  width: 180px !important;
   height: auto !important;
   transform: scale(1) !important;
   display: block;
   margin: 0 auto;
 }
 
-/* Casas del footer - mantener difuminadas */
+/* Casas del footer - MÁS GRANDES */
 .casas-footer,
-footer .decoracion {
+footer .decoracion,
+.footer-houses img {
+  width: 120px !important;
+  height: auto !important;
   opacity: 0.2;
   filter: blur(1px);
+  transform: scale(1.5) !important;
 }
 
 /* Las imágenes en login mantener tamaño triple */
@@ -624,4 +638,13 @@ body.login-page img {
   transform: scale(3);
   transform-origin: center;
   margin: 2em;
+}
+
+/* Remover estilos de círculo/avatar */
+.user-avatar,
+.avatar-circle,
+header .avatar {
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
