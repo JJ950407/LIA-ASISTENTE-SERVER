@@ -50,6 +50,10 @@ body {
 .brand__logo {
   width: auto;
   height: 40px;
+  max-width: 160px;
+  display: block;
+  visibility: visible;
+  opacity: 1;
   object-fit: contain;
 }
 
