@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const BASE_CLIENTS_DIR = path.resolve(__dirname, 'data', 'clientes');
 
 app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: false }));
 
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', 'Basic realm="LIA Pagaré"');

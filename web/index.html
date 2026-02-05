@@ -4,27 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LIA Pagaré</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20250208" />
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div class="brand">
-        <img src="assets/adein-logo.png" alt="ADEIN" class="brand__logo" />
-        <div class="brand__text">
-          <h1>LIA Pagaré Web</h1>
-          <p>Gestión inmobiliaria • Documentos seguros</p>
+  <div class="app dashboard">
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <img src="/assets/logo.png" alt="LIA" class="sidebar__logo logo-principal" />
+        <div class="sidebar__brand-text">
+          <span class="sidebar__name">ADEIN</span>
+          <span class="sidebar__sub">LIA Pagaré Web</span>
         </div>
       </div>
-    </header>
+      <div class="sidebar__section">
+        <p class="sidebar__section-title">Pasos del wizard</p>
+        <ol class="sidebar__steps">
+          <li>Documentos</li>
+          <li>Venta y pagos</li>
+          <li>Cliente y deudor</li>
+          <li>Predio y testigos</li>
+          <li>Resumen final</li>
+        </ol>
+      </div>
+      <div class="sidebar__footer">
+        <img src="/assets/adein.png" alt="ADEIN" class="sidebar__adein logo-footer" />
+      </div>
+    </aside>
 
-    <main>
-      <section class="progress">
-        <div class="progress__label" id="progress-label">Paso 1 de 5</div>
-        <div class="progress__bar">
-          <span id="progress-bar"></span>
+    <main class="main">
+      <header class="main-header">
+        <div class="main-header__left">
+          <span class="main-header__eyebrow">Asistente</span>
+          <h1 class="main-header__title" id="progress-label">Paso 1 de 5</h1>
+          <div class="wizard-progress">
+            <div class="wizard-progress__bar">
+              <span id="progress-bar"></span>
+            </div>
+          </div>
         </div>
-      </section>
+        <div class="main-header__right">
+          <div class="main-header__brand">
+            <img src="/assets/adein.png" alt="ADEIN" class="main-header__logo logo-header-derecha" />
+          </div>
+          <button type="button" class="main-header__action" onclick="window.location.href='/logout'">Cerrar sesión</button>
+        </div>
+      </header>
 
       <div class="wizard-card">
         <form id="wizard" novalidate>
@@ -154,7 +178,7 @@
                   <input type="text" id="vendedorNombre" data-required="true" />
                   <span class="error"></span>
                 </label>
-                <label class="field">
+                <label class="field field--full">
                   <span>Domicilio del vendedor</span>
                   <input type="text" id="vendedorDomicilio" data-required="true" />
                   <span class="error"></span>
@@ -173,17 +197,17 @@
                   </select>
                   <span class="error"></span>
                 </label>
-                <label class="field">
+                <label class="field field--full">
                   <span>Dirección completa del deudor</span>
                   <input type="text" id="direccion" data-required="true" />
                   <span class="error"></span>
                 </label>
-                <label class="field">
+                <label class="field field--full">
                   <span>Población (ciudad, estado, C.P.)</span>
                   <input type="text" id="poblacion" data-required="true" />
                   <span class="error"></span>
                 </label>
-                <label class="field">
+                <label class="field field--full">
                   <span>Lugar de expedición</span>
                   <input type="text" id="lugarExpedicion" data-required="true" />
                   <span class="error"></span>
@@ -196,7 +220,7 @@
               </label>
 
               <div class="grid" id="lugarPagoContainer">
-                <label class="field">
+                <label class="field field--full">
                   <span>Lugar de pago (otro)</span>
                   <input type="text" id="lugarPago" data-required="true" />
                   <span class="error"></span>
@@ -222,7 +246,7 @@
                   <input type="text" id="predioNombre" data-required="true" />
                   <span class="error"></span>
                 </label>
-                <label class="field">
+                <label class="field field--full">
                   <span>Ubicación completa</span>
                   <input type="text" id="predioUbicacion" data-required="true" />
                   <span class="error"></span>
@@ -311,6 +335,10 @@
           </div>
         </div>
       </section>
+
+      <footer class="main-footer" aria-hidden="true">
+        <img src="/assets/casitas.png" alt="" class="main-footer__decor casas-footer" />
+      </footer>
     </main>
   </div>
 
@@ -335,6 +363,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20250206"></script>
 </body>
 </html>
