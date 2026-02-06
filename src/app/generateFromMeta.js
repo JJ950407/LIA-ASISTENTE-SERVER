@@ -112,11 +112,34 @@ function writeJsonAtomic(filePath, data) {
 }
 
 async function copyDirSkippingMeta(srcDir, destDir) {
+  const srcResolved = path.resolve(srcDir);
+  const destResolved = path.resolve(destDir);
+  if (srcResolved === destResolved) {
+    if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS_SKIP]', { op: 'copy', srcResolved, destResolved });
+    }
+    return;
+  }
+  if (process.env.DEBUG_FS === '1') {
+    console.log('[DEBUG_FS_OP]', { op: 'copy', srcResolved, destResolved });
+  }
   await fse.ensureDir(destDir);
-  await fse.copy(srcDir, destDir, {
-    overwrite: true,
-    filter: (item) => path.basename(item) !== 'meta.json'
-  });
+  try {
+    await fse.copy(srcDir, destDir, {
+      overwrite: true,
+      filter: (item) => path.basename(item) !== 'meta.json'
+    });
+  } catch (error) {
+    if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS_ERR]', {
+        op: 'copy',
+        srcResolved,
+        destResolved,
+        message: error.message || String(error)
+      });
+    }
+    throw error;
+  }
 }
 
 async function ensureAuditJson(basePath, meta, outputs, docs) {
@@ -172,12 +195,27 @@ async function generateFromMeta({ basePath, docs }) {
     const sourcePdfResolved = path.resolve(pdfPath);
     const targetPdfResolved = path.resolve(targetPdf);
     if (sourcePdfResolved !== targetPdfResolved) {
-      await fse.copy(pdfPath, targetPdf, { overwrite: true });
+      if (process.env.DEBUG_FS === '1') {
+        console.log('[DEBUG_FS_OP]', { op: 'copy', srcResolved: sourcePdfResolved, destResolved: targetPdfResolved });
+      }
+      try {
+        await fse.copy(pdfPath, targetPdf, { overwrite: true });
+      } catch (error) {
+        if (process.env.DEBUG_FS === '1') {
+          console.log('[DEBUG_FS_ERR]', {
+            op: 'copy',
+            srcResolved: sourcePdfResolved,
+            destResolved: targetPdfResolved,
+            message: error.message || String(error)
+          });
+        }
+        throw error;
+      }
     } else if (process.env.DEBUG_FS === '1') {
-      console.log('[DEBUG_FS]', {
-        action: 'skip-copy-file',
-        src: sourcePdfResolved,
-        dest: targetPdfResolved
+      console.log('[DEBUG_FS_SKIP]', {
+        op: 'copy',
+        srcResolved: sourcePdfResolved,
+        destResolved: targetPdfResolved
       });
     }
     outputs.contratoPdfPath = targetPdf;
