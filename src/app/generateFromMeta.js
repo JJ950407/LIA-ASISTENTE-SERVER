@@ -149,9 +149,17 @@ async function generateFromMeta({ basePath, docs }) {
   if (docs === 'pagares' || docs === 'ambos') {
     const { baseDir, lotePath } = await generarLoteYMeta({ ...data });
     pagaresBaseDir = baseDir;
-    if (path.resolve(baseDir) !== path.resolve(basePath)) {
+    const baseDirResolved = path.resolve(baseDir);
+    const basePathResolved = path.resolve(basePath);
+    if (baseDirResolved !== basePathResolved) {
       await copyDirSkippingMeta(baseDir, basePath);
       await fse.remove(baseDir);
+    } else if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS]', {
+        action: 'skip-copy-dir',
+        src: baseDirResolved,
+        dest: basePathResolved
+      });
     }
     outputs.pagaresPdfPath = path.join(basePath, 'lote', path.basename(lotePath));
   }
@@ -161,7 +169,17 @@ async function generateFromMeta({ basePath, docs }) {
     const contratoDir = path.join(basePath, 'contrato');
     await fse.ensureDir(contratoDir);
     const targetPdf = path.join(contratoDir, path.basename(pdfPath));
-    await fse.copy(pdfPath, targetPdf, { overwrite: true });
+    const sourcePdfResolved = path.resolve(pdfPath);
+    const targetPdfResolved = path.resolve(targetPdf);
+    if (sourcePdfResolved !== targetPdfResolved) {
+      await fse.copy(pdfPath, targetPdf, { overwrite: true });
+    } else if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS]', {
+        action: 'skip-copy-file',
+        src: sourcePdfResolved,
+        dest: targetPdfResolved
+      });
+    }
     outputs.contratoPdfPath = targetPdf;
   }
 
