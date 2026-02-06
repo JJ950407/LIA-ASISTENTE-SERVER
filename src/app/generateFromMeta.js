@@ -111,10 +111,17 @@ function writeJsonAtomic(filePath, data) {
   fs.renameSync(tmp, filePath);
 }
 
+function isSamePath(a, b) {
+  if (process.platform === 'win32' || process.platform === 'darwin') {
+    return a.toLowerCase() === b.toLowerCase();
+  }
+  return a === b;
+}
+
 async function copyDirSkippingMeta(srcDir, destDir) {
   const srcResolved = path.resolve(srcDir);
   const destResolved = path.resolve(destDir);
-  if (srcResolved === destResolved) {
+  if (isSamePath(srcResolved, destResolved)) {
     if (process.env.DEBUG_FS === '1') {
       console.log('[DEBUG_FS_SKIP]', { op: 'copy', srcResolved, destResolved });
     }
@@ -194,7 +201,7 @@ async function generateFromMeta({ basePath, docs }) {
     const targetPdf = path.join(contratoDir, path.basename(pdfPath));
     const sourcePdfResolved = path.resolve(pdfPath);
     const targetPdfResolved = path.resolve(targetPdf);
-    if (sourcePdfResolved !== targetPdfResolved) {
+    if (!isSamePath(sourcePdfResolved, targetPdfResolved)) {
       if (process.env.DEBUG_FS === '1') {
         console.log('[DEBUG_FS_OP]', { op: 'copy', srcResolved: sourcePdfResolved, destResolved: targetPdfResolved });
       }
