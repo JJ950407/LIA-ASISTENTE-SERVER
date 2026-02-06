@@ -288,20 +288,45 @@ app.post('/api/generar', async (req, res) => {
     // Procesar en background (sin await)
     (async () => {
       try {
-        const outputs = await generateFromMeta({ basePath: basePathAbs, docs: docsType });
+        const result = await generateFromMeta({ basePath: basePathAbs, docs: docsType });
 
-        const responseOutputs = {};
-        if (outputs.contratoPdfPath) {
-          const rel = path.relative(BASE_CLIENTS_DIR, outputs.contratoPdfPath).replace(/\\/g, '/');
-          responseOutputs.contratoPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
-        }
-        if (outputs.pagaresPdfPath) {
-          const rel = path.relative(BASE_CLIENTS_DIR, outputs.pagaresPdfPath).replace(/\\/g, '/');
-          responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
+        // Construir rutas relativas correctamente desde data/
+        const buildRelativePath = (absolutePath) => {
+          if (!absolutePath) return null;
+
+          // Buscar el índice de "data/" en la ruta absoluta
+          const dataIndex = absolutePath.indexOf('data/');
+          if (dataIndex === -1) {
+            console.error('[JOB] Ruta no contiene data/:', absolutePath);
+            return null;
+          }
+
+          // Extraer la ruta relativa desde "data/" en adelante
+          const relativePath = absolutePath.substring(dataIndex + 5); // 5 = "data/".length
+          return relativePath;
+        };
+
+        const outputs = {};
+
+        if (result.contratoPdfPath) {
+          outputs.contratoPdfUrl = buildRelativePath(result.contratoPdfPath);
+          console.log('[JOB] Contrato path:', result.contratoPdfPath);
+          console.log('[JOB] Contrato relative:', outputs.contratoPdfUrl);
         }
 
-        JOBS.set(jobId, { status: 'completed', result: responseOutputs });
-        console.log(`[JOB][${jobId}] COMPLETED`);
+        if (result.lotePdfPath || result.pagaresPdfPath) {
+          const pagaresPath = result.lotePdfPath || result.pagaresPdfPath;
+          outputs.pagaresPdfUrl = buildRelativePath(pagaresPath);
+          console.log('[JOB] Pagarés path:', pagaresPath);
+          console.log('[JOB] Pagarés relative:', outputs.pagaresPdfUrl);
+        }
+
+        JOBS.set(jobId, {
+          status: 'completed',
+          result: outputs
+        });
+
+        console.log(`[JOB][${jobId}] COMPLETED with outputs:`, outputs);
       } catch (error) {
         JOBS.set(jobId, { status: 'failed', error: error.message || String(error) });
         console.log(`[JOB][${jobId}] FAILED ${error.message}`);
