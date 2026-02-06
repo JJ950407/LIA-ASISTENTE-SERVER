@@ -112,11 +112,34 @@ function writeJsonAtomic(filePath, data) {
 }
 
 async function copyDirSkippingMeta(srcDir, destDir) {
+  const srcResolved = path.resolve(srcDir);
+  const destResolved = path.resolve(destDir);
+  if (srcResolved === destResolved) {
+    if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS_SKIP]', { op: 'copy', srcResolved, destResolved });
+    }
+    return;
+  }
+  if (process.env.DEBUG_FS === '1') {
+    console.log('[DEBUG_FS_OP]', { op: 'copy', srcResolved, destResolved });
+  }
   await fse.ensureDir(destDir);
-  await fse.copy(srcDir, destDir, {
-    overwrite: true,
-    filter: (item) => path.basename(item) !== 'meta.json'
-  });
+  try {
+    await fse.copy(srcDir, destDir, {
+      overwrite: true,
+      filter: (item) => path.basename(item) !== 'meta.json'
+    });
+  } catch (error) {
+    if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS_ERR]', {
+        op: 'copy',
+        srcResolved,
+        destResolved,
+        message: error.message || String(error)
+      });
+    }
+    throw error;
+  }
 }
 
 async function ensureAuditJson(basePath, meta, outputs, docs) {
@@ -149,9 +172,17 @@ async function generateFromMeta({ basePath, docs }) {
   if (docs === 'pagares' || docs === 'ambos') {
     const { baseDir, lotePath } = await generarLoteYMeta({ ...data });
     pagaresBaseDir = baseDir;
-    if (path.resolve(baseDir) !== path.resolve(basePath)) {
+    const baseDirResolved = path.resolve(baseDir);
+    const basePathResolved = path.resolve(basePath);
+    if (baseDirResolved !== basePathResolved) {
       await copyDirSkippingMeta(baseDir, basePath);
       await fse.remove(baseDir);
+    } else if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS]', {
+        action: 'skip-copy-dir',
+        src: baseDirResolved,
+        dest: basePathResolved
+      });
     }
     outputs.pagaresPdfPath = path.join(basePath, 'lote', path.basename(lotePath));
   }
@@ -161,7 +192,32 @@ async function generateFromMeta({ basePath, docs }) {
     const contratoDir = path.join(basePath, 'contrato');
     await fse.ensureDir(contratoDir);
     const targetPdf = path.join(contratoDir, path.basename(pdfPath));
-    await fse.copy(pdfPath, targetPdf, { overwrite: true });
+    const sourcePdfResolved = path.resolve(pdfPath);
+    const targetPdfResolved = path.resolve(targetPdf);
+    if (sourcePdfResolved !== targetPdfResolved) {
+      if (process.env.DEBUG_FS === '1') {
+        console.log('[DEBUG_FS_OP]', { op: 'copy', srcResolved: sourcePdfResolved, destResolved: targetPdfResolved });
+      }
+      try {
+        await fse.copy(pdfPath, targetPdf, { overwrite: true });
+      } catch (error) {
+        if (process.env.DEBUG_FS === '1') {
+          console.log('[DEBUG_FS_ERR]', {
+            op: 'copy',
+            srcResolved: sourcePdfResolved,
+            destResolved: targetPdfResolved,
+            message: error.message || String(error)
+          });
+        }
+        throw error;
+      }
+    } else if (process.env.DEBUG_FS === '1') {
+      console.log('[DEBUG_FS_SKIP]', {
+        op: 'copy',
+        srcResolved: sourcePdfResolved,
+        destResolved: targetPdfResolved
+      });
+    }
     outputs.contratoPdfPath = targetPdf;
   }
 
