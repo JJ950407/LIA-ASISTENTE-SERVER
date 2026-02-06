@@ -9,6 +9,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// PARCHE: Timeout extendido para generación de documentos
+const GENERATION_TIMEOUT_MS = 180000; // 3 minutos
 const BASE_CLIENTS_DIR = path.resolve(__dirname, 'data', 'clientes');
 const ENABLE_AUTH = String(process.env.ENABLE_AUTH || '0') === '1';
 const AUTH_USER = process.env.AUTH_USER;
@@ -21,6 +23,40 @@ const SESSION_VALUE = 'ok';
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
+// Aplicar timeout extendido a todas las requests
+app.use((req, res, next) => {
+  req.setTimeout(GENERATION_TIMEOUT_MS);
+  res.setTimeout(GENERATION_TIMEOUT_MS);
+  next();
+});
+
+if (process.env.DEBUG_HTTP === '1') {
+  app.use((req, res, next) => {
+    const rid = `${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 6)}`;
+    req._rid = rid;
+    const t0 = Date.now();
+    const ct = req.headers['content-type'] || '';
+    const accept = req.headers.accept || '';
+    const ip = req.ip;
+    console.log(`[HTTP][RID=${rid}] IN ${req.method} ${req.originalUrl} ct=${ct} accept=${accept} ip=${ip}`);
+
+    res.on('finish', () => {
+      const ms = Date.now() - t0;
+      console.log(`[HTTP][RID=${rid}] FINISH status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
+    });
+    res.on('close', () => {
+      const ms = Date.now() - t0;
+      console.log(`[HTTP][RID=${rid}] CLOSE status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
+    });
+    res.on('error', (err) => {
+      console.log(`[HTTP][RID=${rid}] RES_ERROR ${err?.message || String(err)}`);
+    });
+    req.on('aborted', () => {
+      console.log(`[HTTP][RID=${rid}] ABORTED`);
+    });
+    next();
+  });
+}
 
 if (process.env.DEBUG_HTTP === '1') {
   app.use((req, res, next) => {

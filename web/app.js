@@ -347,11 +347,15 @@ submitButton.addEventListener('click', async () => {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos
       const generateRes = await fetch('/api/generar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ basePath: captureData.basePath, docs: payload.tipoDocumento })
+        body: JSON.stringify({ basePath: captureData.basePath, docs: payload.tipoDocumento }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const generateData = await generateRes.json();
       if (!generateData.ok) {
@@ -384,7 +388,11 @@ submitButton.addEventListener('click', async () => {
     if (window.LIA_LOADER) {
       window.LIA_LOADER.hideLoader();
     }
-    statusText.textContent = error.message;
+    if (error.name === 'AbortError') {
+      statusText.textContent = 'Timeout: La generación tardó más de 3 minutos.';
+    } else {
+      statusText.textContent = error.message;
+    }
   } finally {
     submitButton.disabled = false;
   }
