@@ -4,6 +4,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const { parseDateDMYLoose } = require('./src/parsers/date');
 const { generateFromMeta } = require('./src/app/generateFromMeta');
+const JOBS = new Map(); // Almacena jobs en memoria: jobId -> { status, result, error }
 
 dotenv.config();
 
@@ -29,34 +30,6 @@ app.use((req, res, next) => {
   res.setTimeout(GENERATION_TIMEOUT_MS);
   next();
 });
-
-if (process.env.DEBUG_HTTP === '1') {
-  app.use((req, res, next) => {
-    const rid = `${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 6)}`;
-    req._rid = rid;
-    const t0 = Date.now();
-    const ct = req.headers['content-type'] || '';
-    const accept = req.headers.accept || '';
-    const ip = req.ip;
-    console.log(`[HTTP][RID=${rid}] IN ${req.method} ${req.originalUrl} ct=${ct} accept=${accept} ip=${ip}`);
-
-    res.on('finish', () => {
-      const ms = Date.now() - t0;
-      console.log(`[HTTP][RID=${rid}] FINISH status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
-    });
-    res.on('close', () => {
-      const ms = Date.now() - t0;
-      console.log(`[HTTP][RID=${rid}] CLOSE status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
-    });
-    res.on('error', (err) => {
-      console.log(`[HTTP][RID=${rid}] RES_ERROR ${err?.message || String(err)}`);
-    });
-    req.on('aborted', () => {
-      console.log(`[HTTP][RID=${rid}] ABORTED`);
-    });
-    next();
-  });
-}
 
 if (process.env.DEBUG_HTTP === '1') {
   app.use((req, res, next) => {
@@ -283,22 +256,9 @@ app.post('/api/capturas', (req, res) => {
 
 app.post('/api/generar', async (req, res) => {
   const rid = req._rid;
-  const timeoutId = setTimeout(() => {
-    if (process.env.DEBUG_HTTP === '1') {
-      console.log(`[HTTP][RID=${rid}] TIMEOUT_WARNING still_pending`);
-    }
-  }, 25000);
-  res.once('finish', () => clearTimeout(timeoutId));
-  res.once('close', () => clearTimeout(timeoutId));
   try {
     const { basePath, docs } = req.body || {};
     if (!basePath) {
-      if (res.headersSent) {
-        if (process.env.DEBUG_HTTP === '1') {
-          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
-        }
-        return;
-      }
       if (process.env.DEBUG_HTTP === '1') {
         console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=400`);
       }
@@ -307,54 +267,77 @@ app.post('/api/generar', async (req, res) => {
     const docsType = docs || 'ambos';
     const basePathAbs = path.resolve(__dirname, basePath);
     if (!basePathAbs.startsWith(BASE_CLIENTS_DIR)) {
-      if (res.headersSent) {
-        if (process.env.DEBUG_HTTP === '1') {
-          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
-        }
-        return;
-      }
       if (process.env.DEBUG_HTTP === '1') {
         console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=400`);
       }
       return res.status(400).json({ ok: false, error: 'Ruta inválida.' });
     }
 
-    const outputs = await generateFromMeta({ basePath: basePathAbs, docs: docsType });
+    // Generar jobId único
+    const jobId = `job-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    
+    // Iniciar job
+    JOBS.set(jobId, { status: 'processing', progress: 0 });
 
-    const responseOutputs = {};
-    if (outputs.contratoPdfPath) {
-      const rel = path.relative(BASE_CLIENTS_DIR, outputs.contratoPdfPath).replace(/\\/g, '/');
-      responseOutputs.contratoPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
-    }
-    if (outputs.pagaresPdfPath) {
-      const rel = path.relative(BASE_CLIENTS_DIR, outputs.pagaresPdfPath).replace(/\\/g, '/');
-      responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
-    }
-
-    if (res.headersSent) {
-      if (process.env.DEBUG_HTTP === '1') {
-        console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
-      }
-      return;
-    }
+    // Responder INMEDIATAMENTE con el jobId
     if (process.env.DEBUG_HTTP === '1') {
-      console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=200`);
+      console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=200 jobId=${jobId}`);
     }
-    return res.json({ ok: true, outputs: responseOutputs });
+    res.json({ ok: true, jobId });
+
+    // Procesar en background (sin await)
+    (async () => {
+      try {
+        const outputs = await generateFromMeta({ basePath: basePathAbs, docs: docsType });
+
+        const responseOutputs = {};
+        if (outputs.contratoPdfPath) {
+          const rel = path.relative(BASE_CLIENTS_DIR, outputs.contratoPdfPath).replace(/\\/g, '/');
+          responseOutputs.contratoPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
+        }
+        if (outputs.pagaresPdfPath) {
+          const rel = path.relative(BASE_CLIENTS_DIR, outputs.pagaresPdfPath).replace(/\\/g, '/');
+          responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
+        }
+
+        JOBS.set(jobId, { status: 'completed', result: responseOutputs });
+        console.log(`[JOB][${jobId}] COMPLETED`);
+      } catch (error) {
+        JOBS.set(jobId, { status: 'failed', error: error.message || String(error) });
+        console.log(`[JOB][${jobId}] FAILED ${error.message}`);
+      }
+    })();
+
   } catch (error) {
     if (process.env.DEBUG_HTTP === '1') {
       console.log(`[HTTP][RID=${rid}] HANDLER_ERROR ${error?.stack || error?.message || String(error)}`);
     }
     if (!res.headersSent) {
-      if (process.env.DEBUG_HTTP === '1') {
-        console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=500`);
-      }
       return res.status(500).json({ ok: false, error: 'INTERNAL', rid });
     }
-    if (process.env.DEBUG_HTTP === '1') {
-      console.log(`[HTTP][RID=${rid}] ERROR_AFTER_HEADERS`);
-    }
   }
+});
+
+app.get('/api/status/:jobId', (req, res) => {
+  const { jobId } = req.params;
+  const job = JOBS.get(jobId);
+  
+  if (!job) {
+    return res.status(404).json({ ok: false, error: 'Job no encontrado' });
+  }
+
+  if (job.status === 'completed') {
+    // Limpiar job después de 5 minutos
+    setTimeout(() => JOBS.delete(jobId), 300000);
+    return res.json({ ok: true, status: 'completed', outputs: job.result });
+  }
+
+  if (job.status === 'failed') {
+    setTimeout(() => JOBS.delete(jobId), 300000);
+    return res.json({ ok: false, status: 'failed', error: job.error });
+  }
+
+  return res.json({ ok: true, status: 'processing' });
 });
 
 app.get('/api/descargar', (req, res) => {
