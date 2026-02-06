@@ -389,8 +389,20 @@ submitButton.addEventListener('click', async () => {
           downloadPagares.classList.toggle('hidden', !pagaresPdfUrl);
           printPagares.classList.toggle('hidden', !pagaresPdfUrl);
 
-          if (contratoPdfUrl) downloadContrato.href = contratoPdfUrl;
-          if (pagaresPdfUrl) downloadPagares.href = pagaresPdfUrl;
+          // Construir URLs de descarga correctas usando el endpoint /api/descargar
+          if (contratoPdfUrl) {
+            const contratoPath = encodeURIComponent(contratoPdfUrl);
+            downloadContrato.href = `/api/descargar?path=${contratoPath}`;
+            downloadContrato.style.display = 'inline-block';
+            console.log('[DOWNLOAD] Contrato URL:', downloadContrato.href);
+          }
+
+          if (pagaresPdfUrl) {
+            const pagaresPath = encodeURIComponent(pagaresPdfUrl);
+            downloadPagares.href = `/api/descargar?path=${pagaresPath}`;
+            downloadPagares.style.display = 'inline-block';
+            console.log('[DOWNLOAD] Pagarés URL:', downloadPagares.href);
+          }
 
           resultsSection.classList.remove('hidden');
 
