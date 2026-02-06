@@ -347,11 +347,15 @@ submitButton.addEventListener('click', async () => {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutos
       const generateRes = await fetch('/api/generar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ basePath: captureData.basePath, docs: payload.tipoDocumento })
+        body: JSON.stringify({ basePath: captureData.basePath, docs: payload.tipoDocumento }),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       const generateData = await generateRes.json();
       if (!generateData.ok || !generateData.jobId) {
