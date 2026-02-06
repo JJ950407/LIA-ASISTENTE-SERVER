@@ -354,25 +354,58 @@ submitButton.addEventListener('click', async () => {
       });
 
       const generateData = await generateRes.json();
-      if (!generateData.ok) {
-        throw new Error(generateData.error || 'Error al generar documentos');
+      if (!generateData.ok || !generateData.jobId) {
+        throw new Error(generateData.error || 'Error al iniciar generación');
       }
 
-      statusText.textContent = 'Documentos listos para descarga.';
-      const { contratoPdfUrl, pagaresPdfUrl } = generateData.outputs || {};
+      const jobId = generateData.jobId;
+      statusText.textContent = `Generando documentos... (Job: ${jobId})`;
 
-      downloadContrato.classList.toggle('hidden', !contratoPdfUrl);
-      downloadPagares.classList.toggle('hidden', !pagaresPdfUrl);
-      printPagares.classList.toggle('hidden', !pagaresPdfUrl);
+      // Polling cada 2 segundos
+      let attempts = 0;
+      const maxAttempts = 90; // 3 minutos máximo
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        attempts++;
 
-      if (contratoPdfUrl) downloadContrato.href = contratoPdfUrl;
-      if (pagaresPdfUrl) downloadPagares.href = pagaresPdfUrl;
+        if (window.LIA_LOADER && softPct < 95) {
+          softPct = Math.min(95, 10 + attempts * 1);
+          window.LIA_LOADER.setPct(softPct);
+        }
 
-      resultsSection.classList.remove('hidden');
+        const statusRes = await fetch(`/api/status/${jobId}`);
+        const statusData = await statusRes.json();
 
-      if (window.LIA_LOADER) {
-        window.LIA_LOADER.setStep('Finalizando…');
-        window.LIA_LOADER.setPct(100);
+        if (statusData.status === 'completed') {
+          statusText.textContent = 'Documentos listos para descarga.';
+          const { contratoPdfUrl, pagaresPdfUrl } = statusData.outputs || {};
+
+          downloadContrato.classList.toggle('hidden', !contratoPdfUrl);
+          downloadPagares.classList.toggle('hidden', !pagaresPdfUrl);
+          printPagares.classList.toggle('hidden', !pagaresPdfUrl);
+
+          if (contratoPdfUrl) downloadContrato.href = contratoPdfUrl;
+          if (pagaresPdfUrl) downloadPagares.href = pagaresPdfUrl;
+
+          resultsSection.classList.remove('hidden');
+
+          if (window.LIA_LOADER) {
+            window.LIA_LOADER.setStep('Finalizado…');
+            window.LIA_LOADER.setPct(100);
+          }
+          break;
+        }
+
+        if (statusData.status === 'failed') {
+          throw new Error(statusData.error || 'Error en generación');
+        }
+
+        // Continuar polling si status === 'processing'
+      }
+
+      if (attempts >= maxAttempts) {
+        throw new Error('Timeout: La generación tardó más de 3 minutos');
       }
     } finally {
       if (softTimer) clearInterval(softTimer);
@@ -384,7 +417,11 @@ submitButton.addEventListener('click', async () => {
     if (window.LIA_LOADER) {
       window.LIA_LOADER.hideLoader();
     }
-    statusText.textContent = error.message;
+    if (error.name === 'AbortError') {
+      statusText.textContent = 'Timeout: La generación tardó más de 3 minutos.';
+    } else {
+      statusText.textContent = error.message;
+    }
   } finally {
     submitButton.disabled = false;
   }
