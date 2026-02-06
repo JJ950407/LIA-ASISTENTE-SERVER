@@ -22,6 +22,34 @@ const SESSION_VALUE = 'ok';
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
+if (process.env.DEBUG_HTTP === '1') {
+  app.use((req, res, next) => {
+    const rid = `${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 6)}`;
+    req._rid = rid;
+    const t0 = Date.now();
+    const ct = req.headers['content-type'] || '';
+    const accept = req.headers.accept || '';
+    const ip = req.ip;
+    console.log(`[HTTP][RID=${rid}] IN ${req.method} ${req.originalUrl} ct=${ct} accept=${accept} ip=${ip}`);
+
+    res.on('finish', () => {
+      const ms = Date.now() - t0;
+      console.log(`[HTTP][RID=${rid}] FINISH status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
+    });
+    res.on('close', () => {
+      const ms = Date.now() - t0;
+      console.log(`[HTTP][RID=${rid}] CLOSE status=${res.statusCode} headersSent=${res.headersSent} ms=${ms}`);
+    });
+    res.on('error', (err) => {
+      console.log(`[HTTP][RID=${rid}] RES_ERROR ${err?.message || String(err)}`);
+    });
+    req.on('aborted', () => {
+      console.log(`[HTTP][RID=${rid}] ABORTED`);
+    });
+    next();
+  });
+}
+
 function unauthorized(res) {
   res.setHeader('WWW-Authenticate', `Basic realm="${AUTH_REALM}"`);
   return res.status(401).send('Autenticación requerida.');
@@ -162,6 +190,9 @@ app.post('/api/capturas', (req, res) => {
   try {
     const payload = req.body?.payload;
     if (!payload) {
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${req._rid}] RESPONDING kind=json status=400`);
+      }
       return res.status(400).json({ ok: false, error: 'Falta payload.' });
     }
 
@@ -196,6 +227,9 @@ app.post('/api/capturas', (req, res) => {
       });
     }
 
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${req._rid}] RESPONDING kind=json status=200`);
+    }
     return res.json({
       ok: true,
       basePath: basePathRel,
@@ -204,19 +238,48 @@ app.post('/api/capturas', (req, res) => {
       dateISO
     });
   } catch (error) {
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${req._rid}] RESPONDING kind=json status=500`);
+    }
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 });
 
 app.post('/api/generar', async (req, res) => {
+  const rid = req._rid;
+  const timeoutId = setTimeout(() => {
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] TIMEOUT_WARNING still_pending`);
+    }
+  }, 25000);
+  res.once('finish', () => clearTimeout(timeoutId));
+  res.once('close', () => clearTimeout(timeoutId));
   try {
     const { basePath, docs } = req.body || {};
     if (!basePath) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=400`);
+      }
       return res.status(400).json({ ok: false, error: 'Falta basePath.' });
     }
     const docsType = docs || 'ambos';
     const basePathAbs = path.resolve(__dirname, basePath);
     if (!basePathAbs.startsWith(BASE_CLIENTS_DIR)) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=400`);
+      }
       return res.status(400).json({ ok: false, error: 'Ruta inválida.' });
     }
 
@@ -232,42 +295,139 @@ app.post('/api/generar', async (req, res) => {
       responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
     }
 
+    if (res.headersSent) {
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+      }
+      return;
+    }
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=200`);
+    }
     return res.json({ ok: true, outputs: responseOutputs });
   } catch (error) {
-    return res.status(500).json({ ok: false, error: error.message || String(error) });
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] HANDLER_ERROR ${error?.stack || error?.message || String(error)}`);
+    }
+    if (!res.headersSent) {
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=500`);
+      }
+      return res.status(500).json({ ok: false, error: 'INTERNAL', rid });
+    }
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] ERROR_AFTER_HEADERS`);
+    }
   }
 });
 
 app.get('/api/descargar', (req, res) => {
-  const relPath = req.query.path;
-  if (!relPath || typeof relPath !== 'string') {
-    return res.status(400).send('Falta path.');
+  const rid = req._rid;
+  const timeoutId = setTimeout(() => {
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] TIMEOUT_WARNING still_pending`);
+    }
+  }, 25000);
+  res.once('finish', () => clearTimeout(timeoutId));
+  res.once('close', () => clearTimeout(timeoutId));
+  try {
+    const relPath = req.query.path;
+    if (!relPath || typeof relPath !== 'string') {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=text status=400`);
+      }
+      return res.status(400).send('Falta path.');
+    }
+    if (relPath.includes('\0')) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=text status=400`);
+      }
+      return res.status(400).send('Ruta inválida.');
+    }
+    if (path.isAbsolute(relPath)) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=text status=400`);
+      }
+      return res.status(400).send('Ruta inválida.');
+    }
+    const candidate = path.resolve(BASE_CLIENTS_DIR, relPath);
+    const rel = path.relative(BASE_CLIENTS_DIR, candidate);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=text status=400`);
+      }
+      return res.status(400).send('Ruta inválida.');
+    }
+    const exists = fs.existsSync(candidate);
+    if (process.env.DEBUG_DOWNLOADS === '1') {
+      console.log('[DEBUG_DOWNLOADS]', {
+        BASE_CLIENTS_DIR,
+        relPath,
+        candidate,
+        rel,
+        exists
+      });
+    }
+    if (!exists) {
+      if (res.headersSent) {
+        if (process.env.DEBUG_HTTP === '1') {
+          console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+        }
+        return;
+      }
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=text status=404`);
+      }
+      return res.status(404).send('Archivo no encontrado.');
+    }
+    if (res.headersSent) {
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] DOUBLE_RESPONSE_PREVENTED`);
+      }
+      return;
+    }
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] RESPONDING kind=file status=200`);
+    }
+    return res.download(candidate);
+  } catch (error) {
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] HANDLER_ERROR ${error?.stack || error?.message || String(error)}`);
+    }
+    if (!res.headersSent) {
+      if (process.env.DEBUG_HTTP === '1') {
+        console.log(`[HTTP][RID=${rid}] RESPONDING kind=json status=500`);
+      }
+      return res.status(500).json({ ok: false, error: 'INTERNAL', rid });
+    }
+    if (process.env.DEBUG_HTTP === '1') {
+      console.log(`[HTTP][RID=${rid}] ERROR_AFTER_HEADERS`);
+    }
   }
-  if (relPath.includes('\0')) {
-    return res.status(400).send('Ruta inválida.');
-  }
-  if (path.isAbsolute(relPath)) {
-    return res.status(400).send('Ruta inválida.');
-  }
-  const candidate = path.resolve(BASE_CLIENTS_DIR, relPath);
-  const rel = path.relative(BASE_CLIENTS_DIR, candidate);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) {
-    return res.status(400).send('Ruta inválida.');
-  }
-  const exists = fs.existsSync(candidate);
-  if (process.env.DEBUG_DOWNLOADS === '1') {
-    console.log('[DEBUG_DOWNLOADS]', {
-      BASE_CLIENTS_DIR,
-      relPath,
-      candidate,
-      rel,
-      exists
-    });
-  }
-  if (!exists) {
-    return res.status(404).send('Archivo no encontrado.');
-  }
-  return res.download(candidate);
 });
 
 app.listen(PORT, () => {
