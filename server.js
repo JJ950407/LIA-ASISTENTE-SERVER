@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const { parseDateDMYLoose } = require('./src/parsers/date');
 const { generateFromMeta } = require('./src/app/generateFromMeta');
@@ -14,7 +15,40 @@ const ENABLE_AUTH = String(process.env.ENABLE_AUTH || '0') === '1';
 const AUTH_USER = process.env.AUTH_USER;
 const AUTH_PASS = process.env.AUTH_PASS;
 const AUTH_REALM = process.env.AUTH_REALM || 'LIA Pagaré';
+const SESSION_COOKIE = 'lia_session';
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+const LOGIN_USER = 'isra';
+const LOGIN_PASS = 'adein123';
 
+app.use(cookieParser());
+
+function checkAuth(req, res, next) {
+  const reqPath = req.path || '';
+  const publicAssetExt = /\.(css|js|png|jpg|jpeg|svg|gif|woff|woff2|ttf|eot)$/i;
+  if (
+    reqPath === '/login' ||
+    reqPath === '/logout' ||
+    reqPath === '/web/login.html' ||
+    reqPath.startsWith('/css/') ||
+    reqPath.startsWith('/js/') ||
+    reqPath.startsWith('/assets/') ||
+    publicAssetExt.test(reqPath)
+  ) {
+    return next();
+  }
+
+  if (req.cookies && req.cookies[SESSION_COOKIE] === 'ok') {
+    return next();
+  }
+
+  return res.redirect(302, '/login');
+}
+
+app.use(checkAuth);
+
+app.use(express.static(path.join(__dirname, 'web')));
+
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: '1mb' }));
 
 function unauthorized(res) {
@@ -45,7 +79,27 @@ if (ENABLE_AUTH) {
   }
   app.use(basicAuth);
 }
-app.use(express.static(path.join(__dirname, 'web')));
+
+app.get('/login', (req, res) => {
+  return res.sendFile(path.join(__dirname, 'web', 'login.html'));
+});
+
+app.post('/login', (req, res) => {
+  const { usuario, password } = req.body || {};
+  if (usuario === LOGIN_USER && password === LOGIN_PASS) {
+    res.cookie(SESSION_COOKIE, 'ok', {
+      maxAge: SESSION_TTL_MS,
+      httpOnly: true
+    });
+    return res.redirect('/');
+  }
+  return res.redirect('/login?error=1');
+});
+
+app.get('/logout', (req, res) => {
+  res.clearCookie(SESSION_COOKIE);
+  return res.redirect('/login');
+});
 
 function slugifyWeb(text) {
   return String(text || '')
