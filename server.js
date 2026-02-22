@@ -1,182 +1,134 @@
+const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const express = require('express');
-const dotenv = require('dotenv');
-const { parseDateDMYLoose } = require('./src/parsers/date');
-const { generateFromMeta } = require('./src/app/generateFromMeta');
+const cookieParser = require('cookie-parser');
 
-dotenv.config();
+const { generateFromMeta } = require('./src/app/generateFromMeta');
+const { slugifyWeb, parseFechaEmision, ymd, writeJsonAtomic } = require('./src/core/utils');
+const { calcularTablaAmortizacion } = require('./src/calculators/amortizacion');
+const { generarPagarePDF } = require('./src/documents/pagare');
+const { generarContratoPDF } = require('./src/documents/contrato');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_CLIENTS_DIR = path.resolve(__dirname, 'data', 'clientes');
-const ENABLE_AUTH = String(process.env.ENABLE_AUTH || '0') === '1';
-const AUTH_USER = process.env.AUTH_USER;
-const AUTH_PASS = process.env.AUTH_PASS;
-const AUTH_REALM = process.env.AUTH_REALM || 'LIA Pagaré';
 
-app.use(express.json({ limit: '1mb' }));
+const AUTH_CONFIG = {
+  username: 'isra',
+  password: 'adein123',
+  cookieName: 'lia_session',
+  cookieValue: 'ok',
+  sessionDuration: 8 * 60 * 60 * 1000,
+  secret: 'lia-web-golden-secret-2026'
+};
 
-function unauthorized(res) {
-  res.setHeader('WWW-Authenticate', `Basic realm="${AUTH_REALM}"`);
-  return res.status(401).send('Autenticación requerida.');
-}
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(AUTH_CONFIG.secret));
 
-function basicAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const [type, encoded] = header.split(' ');
-  if (type !== 'Basic' || !encoded) {
-    return unauthorized(res);
-  }
-  const decoded = Buffer.from(encoded, 'base64').toString('utf8');
-  const [user, pass] = decoded.split(':');
-  if (!user || !pass) {
-    return unauthorized(res);
-  }
-  if (user !== AUTH_USER || pass !== AUTH_PASS) {
-    return unauthorized(res);
-  }
-  return next();
-}
+// ESTÁTICOS PÚBLICOS (SIN AUTH) - DEBEN IR ANTES DE checkAuth
+app.use('/css', express.static(path.join(__dirname, 'web', 'css')));
+app.use('/js', express.static(path.join(__dirname, 'web', 'js')));
+app.use('/assets', express.static(path.join(__dirname, 'web', 'assets')));
 
-if (ENABLE_AUTH) {
-  if (!AUTH_USER || !AUTH_PASS) {
-    throw new Error('ENABLE_AUTH=1 requiere AUTH_USER y AUTH_PASS.');
+// RUTAS DE AUTH
+app.get('/login', (req, res) => {
+  const sessionCookie = req.signedCookies[AUTH_CONFIG.cookieName] || req.cookies[AUTH_CONFIG.cookieName];
+  if (sessionCookie === AUTH_CONFIG.cookieValue) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'web', 'login.html'));
+});
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === AUTH_CONFIG.username && password === AUTH_CONFIG.password) {
+    res.cookie(AUTH_CONFIG.cookieName, AUTH_CONFIG.cookieValue, {
+      maxAge: AUTH_CONFIG.sessionDuration,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      signed: true,
+      sameSite: 'strict'
+    });
+    return res.json({ success: true, redirect: '/' });
   }
-  app.use(basicAuth);
-}
+  res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+});
+
+app.get('/logout', (req, res) => {
+  res.clearCookie(AUTH_CONFIG.cookieName);
+  res.redirect('/login');
+});
+
+app.post('/logout', (req, res) => {
+  res.clearCookie(AUTH_CONFIG.cookieName);
+  res.json({ success: true });
+});
+
+// MIDDLEWARE DE AUTH (DESPUÉS de estáticos públicos)
+const checkAuth = (req, res, next) => {
+  if (req.path.startsWith('/css/') || req.path.startsWith('/js/') || req.path.startsWith('/assets/') || req.path === '/login' || req.path === '/logout') {
+    return next();
+  }
+  const sessionCookie = req.signedCookies[AUTH_CONFIG.cookieName] || req.cookies[AUTH_CONFIG.cookieName];
+  if (sessionCookie === AUTH_CONFIG.cookieValue) return next();
+  if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'No autenticado', redirect: '/login' });
+  res.redirect('/login');
+};
+
+app.use(checkAuth);
+
+// ESTÁTICOS PROTEGIDOS
 app.use(express.static(path.join(__dirname, 'web')));
 
-function slugifyWeb(text) {
-  return String(text || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase()
-    .slice(0, 60);
-}
-
-function parseFechaEmision(raw) {
-  if (!raw) return new Date();
-  if (raw instanceof Date) return raw;
-  if (typeof raw === 'number') return new Date(raw);
-  const text = String(raw).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
-    const parsed = new Date(text);
-    if (!Number.isNaN(parsed.getTime())) return parsed;
-  }
-  return parseDateDMYLoose(text);
-}
-
-function ymd(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function writeJsonAtomic(filePath, data) {
-  const tmp = `${filePath}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
-  fs.renameSync(tmp, filePath);
-}
-
+// APIs
 app.post('/api/capturas', (req, res) => {
   try {
-    const payload = req.body?.payload;
-    if (!payload) {
-      return res.status(400).json({ ok: false, error: 'Falta payload.' });
+    const meta = req.body;
+    const outDir = path.join(__dirname, 'data', 'capturas');
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+    
+    let filename = `${slugifyWeb(meta.cliente?.nombre || 'captura')}-${ymd()}.json`;
+    let filepath = path.join(outDir, filename);
+    
+    // FIX: Evitar "Source and destination must not be the same"
+    if (fs.existsSync(filepath)) {
+      filename = `${slugifyWeb(meta.cliente?.nombre || 'captura')}-${ymd()}-${Date.now()}.json`;
+      filepath = path.join(outDir, filename);
     }
-
-    const fechaEmision = parseFechaEmision(payload.fechaEmision || payload.fechaEmisionLote);
-    const dateISO = ymd(fechaEmision);
-    const slug = slugifyWeb(payload.deudor || payload.deudorNombreCompleto || 'cliente');
-
-    const basePathRel = path.join('data', 'clientes', slug, dateISO);
-    const basePathAbs = path.resolve(__dirname, basePathRel);
-    fs.mkdirSync(basePathAbs, { recursive: true });
-
-    const now = new Date().toISOString();
-    const meta = {
-      ...payload,
-      slug,
-      dateISO,
-      basePath: basePathRel,
-      createdAt: payload.createdAt || now,
-      updatedAt: now
-    };
-
-    const metaPath = path.join(basePathAbs, 'meta.json');
-    writeJsonAtomic(metaPath, meta);
-
-    const auditPath = path.join(basePathAbs, 'audit.json');
-    if (!fs.existsSync(auditPath)) {
-      writeJsonAtomic(auditPath, {
-        docId: meta.docId || `LIA-WEB-${Date.now()}`,
-        createdAt: now,
-        updatedAt: now,
-        basePath: basePathRel
-      });
-    }
-
-    return res.json({
-      ok: true,
-      basePath: basePathRel,
-      metaPath: path.join(basePathRel, 'meta.json'),
-      slug,
-      dateISO
-    });
-  } catch (error) {
-    return res.status(500).json({ ok: false, error: error.message || String(error) });
+    
+    writeJsonAtomic(filepath, meta);
+    res.json({ ok: true, filename });
+  } catch (err) {
+    console.error('Error en /api/capturas:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/generar', async (req, res) => {
   try {
-    const { basePath, docs } = req.body || {};
-    if (!basePath) {
-      return res.status(400).json({ ok: false, error: 'Falta basePath.' });
-    }
-    const docsType = docs || 'ambos';
-    const basePathAbs = path.resolve(__dirname, basePath);
-    if (!basePathAbs.startsWith(BASE_CLIENTS_DIR)) {
-      return res.status(400).json({ ok: false, error: 'Ruta inválida.' });
-    }
-
-    const outputs = await generateFromMeta({ basePath: basePathAbs, docs: docsType });
-
-    const responseOutputs = {};
-    if (outputs.contratoPdfPath) {
-      const rel = path.relative(__dirname, outputs.contratoPdfPath).replace(/\\/g, '/');
-      responseOutputs.contratoPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
-    }
-    if (outputs.pagaresPdfPath) {
-      const rel = path.relative(__dirname, outputs.pagaresPdfPath).replace(/\\/g, '/');
-      responseOutputs.pagaresPdfUrl = `/api/descargar?path=${encodeURIComponent(rel)}`;
-    }
-
-    return res.json({ ok: true, outputs: responseOutputs });
-  } catch (error) {
-    return res.status(500).json({ ok: false, error: error.message || String(error) });
+    const { meta, tipo } = req.body;
+    if (!meta || Object.keys(meta).length === 0) return res.status(400).json({ error: 'Metadata vacía' });
+    const result = await generateFromMeta(meta, tipo);
+    res.json(result);
+  } catch (err) {
+    console.error('Error en /api/generar:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/descargar', (req, res) => {
-  const relPath = req.query.path;
-  if (!relPath || typeof relPath !== 'string') {
-    return res.status(400).send('Falta path.');
+  try {
+    const { file } = req.query;
+    if (!file) return res.status(400).json({ error: 'Falta parámetro file' });
+    const safeFile = path.basename(file);
+    const filepath = path.join(__dirname, 'output', safeFile);
+    if (!fs.existsSync(filepath)) return res.status(404).json({ error: 'Archivo no encontrado' });
+    res.download(filepath);
+  } catch (err) {
+    console.error('Error en /api/descargar:', err);
+    res.status(500).json({ error: err.message });
   }
-  const absPath = path.resolve(__dirname, relPath);
-  if (!absPath.startsWith(BASE_CLIENTS_DIR)) {
-    return res.status(400).send('Ruta inválida.');
-  }
-  if (!fs.existsSync(absPath)) {
-    return res.status(404).send('Archivo no encontrado.');
-  }
-  return res.download(absPath);
 });
 
 app.listen(PORT, () => {
-  console.log(`LIA Pagaré web escuchando en http://localhost:${PORT}`);
+  console.log(`🚀 LIA-WEB-GOLDEN en http://localhost:${PORT}`);
+  console.log(`🔐 Login: ${AUTH_CONFIG.username}`);
 });
